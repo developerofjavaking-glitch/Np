@@ -3,93 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ভিডিও প্লেয়ার</title>
+    <title>GitHub ভিডিও গ্যালারি</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-        body { background: #0f172a; color: #f8fafc; padding: 20px; }
-        h1 { text-align: center; margin-bottom: 20px; color: #38bdf8; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0d1117; color: #c9d1d9; padding: 20px; }
         
-        .player-wrap {
-            max-width: 850px;
+        header { text-align: center; margin-bottom: 25px; }
+        h1 { color: #58a6ff; font-size: 24px; margin-bottom: 5px; }
+        .subtitle { font-size: 13px; color: #8b949e; }
+
+        /* ভিডিও প্লেয়ার বক্স */
+        .player-container {
+            max-width: 900px;
             margin: 0 auto 30px auto;
-            background: #1e293b;
+            background: #161b22;
             padding: 15px;
             border-radius: 12px;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
             display: none;
         }
-        video { width: 100%; border-radius: 8px; max-height: 480px; background: #000; }
-        #nowPlaying { margin-top: 10px; font-size: 16px; color: #94a3b8; }
+        video { width: 100%; border-radius: 8px; max-height: 500px; background: #000; outline: none; }
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        #current-title { font-size: 16px; font-weight: 600; color: #f0f6fc; word-break: break-all; }
+        .download-btn {
+            background: #238636;
+            color: #fff;
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .download-btn:hover { background: #2ea043; }
 
-        .grid {
+        /* লোডিং ও এরর মেসেজ */
+        #status-msg { text-align: center; padding: 40px; color: #8b949e; font-size: 16px; }
+
+        /* ভিডিও গ্রিড */
+        .video-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 16px;
-            max-width: 1100px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 18px;
+            max-width: 1200px;
             margin: 0 auto;
         }
-        .card {
-            background: #1e293b;
-            border-radius: 8px;
+        .video-card {
+            background: #161b22;
+            border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
-            border: 1px solid #334155;
-            transition: 0.2s;
+            border: 1px solid #30363d;
+            transition: transform 0.2s, border-color 0.2s;
         }
-        .card:hover { border-color: #38bdf8; transform: scale(1.02); }
-        .thumb { height: 135px; background: #000; position: relative; }
-        .thumb video { width: 100%; height: 100%; object-fit: cover; }
-        .icon {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 35px; color: white; opacity: 0.85;
+        .video-card:hover { transform: translateY(-4px); border-color: #58a6ff; }
+        
+        .thumb-box {
+            height: 145px;
+            background: #010409;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .title { padding: 12px; font-size: 14px; word-break: break-word; }
+        .thumb-box video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .play-badge {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            background: rgba(88, 166, 255, 0.85);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            padding-left: 3px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.7);
+        }
+        .video-info { padding: 12px; }
+        .video-title { font-size: 14px; font-weight: 500; color: #f0f6fc; word-break: break-word; margin-bottom: 4px; }
+        .video-size { font-size: 12px; color: #8b949e; }
     </style>
 </head>
 <body>
 
-    <h1>রুট ফোল্ডারের ভিডিওসমূহ</h1>
+    <header>
+        <h1>🎬 ভিডিও গ্যালারি</h1>
+        <div class="subtitle" id="repo-info">রিপোজিটরি স্ক্যান করা হচ্ছে...</div>
+    </header>
 
-    <div class="player-wrap" id="playerWrap">
-        <video id="videoPlayer" controls></video>
-        <div id="nowPlaying"></div>
+    <!-- মেইন ভিডিও প্লেয়ার -->
+    <div class="player-container" id="playerBox">
+        <video id="mainPlayer" controls playsinline></video>
+        <div class="player-info">
+            <div id="current-title"></div>
+            <a id="downloadLink" class="download-btn" href="#" download target="_blank">ডাউনলোড</a>
+        </div>
     </div>
 
-    <div class="grid" id="videoGrid"></div>
+    <!-- স্ট্যাটাস মেসেজ -->
+    <div id="status-msg">ভিডিও লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</div>
+
+    <!-- ভিডিও কার্ড গ্রিড -->
+    <div class="video-grid" id="videoGrid"></div>
 
     <script>
-        // রুট ফোল্ডারে থাকা আপনার ভিডিও ফাইলগুলোর নাম এখানে লিখুন
-        const videoFiles = [
-            "video1.mp4",
-            "movie.mp4",
-            "tutorial.webm"
-        ];
+        // ==========================================
+        // কনফিগারেশন (ঐচ্ছিক):
+        // GitHub Pages-এ হোস্ট করলে এটি অটোমেটিক কাজ করবে।
+        // তবে লোকাল ফোনে টেস্ট করতে চাইলে নিচে আপনার ইউজারনেম ও রিপোর নাম দিন।
+        // ==========================================
+        let GITHUB_USERNAME = ""; // যেমন: "talha-dev"
+        let REPO_NAME = "";       // যেমন: "my-videos"
+        const FOLDER_PATH = "";   // রুট ফোল্ডারের জন্য ফাঁকা রাখুন
 
-        const grid = document.getElementById('videoGrid');
-        const playerWrap = document.getElementById('playerWrap');
-        const videoPlayer = document.getElementById('videoPlayer');
-        const nowPlaying = document.getElementById('nowPlaying');
+        // GitHub Pages URL থেকে অটোমেটিক ইউজারনেম ও রিপো নাম বের করা
+        if (!GITHUB_USERNAME || !REPO_NAME) {
+            const host = window.location.hostname; // e.g., username.github.io
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            
+            if (host.endsWith('.github.io')) {
+                GITHUB_USERNAME = host.split('.')[0];
+                REPO_NAME = pathParts.length > 0 ? pathParts[0] : `${GITHUB_USERNAME}.github.io`;
+            }
+        }
 
-        videoFiles.forEach(file => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <div class="thumb">
-                    <video src="${file}#t=1" preload="metadata" muted></video>
-                    <div class="icon">▶</div>
-                </div>
-                <div class="title">${file}</div>
-            `;
-            card.onclick = () => {
-                playerWrap.style.display = 'block';
-                videoPlayer.src = file;
-                nowPlaying.innerText = "প্লেইং: " + file;
-                videoPlayer.play();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            };
-            grid.appendChild(card);
-        });
+        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mkv', '.mov', '.m4v'];
+        const statusMsg = document.getElementById('status-msg');
+        const videoGrid = document.getElementById('videoGrid');
+        const repoInfo = document.getElementById('repo-info');
+
+        // ফাইল সাইজ সুন্দরভাবে দেখানোর ফাংশন
+        function formatBytes(bytes) {
+            if (!bytes) return '';
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+        }
+
+        async function fetchVideosFromGitHub() {
+            if (!GITHUB_USERNAME || !REPO_NAME) {
+                statusMsg.innerHTML = "⚠️ কোডের ভেতরে <b>GITHUB_USERNAME</b> এবং <b>REPO_NAME</b> সেট করুন অথবা সাইটটি GitHub Pages-এ হোস্ট করুন।";
+                repoInfo.textContent = "কনফিগারেশন প্রয়োজন";
+                return;
+            }
+
+            repoInfo.textContent = `সোর্স: ${GITHUB_USERNAME} / ${REPO_NAME}`;
+            const apiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FOLDER_PATH}`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`GitHub API এরর (${response.status}): রিপোজিটরিটি Public কি না তা নিশ্চিত করুন।`);
+                }
+
+                const files = await response.json();
+                
+                // শুধু ভিডিও ফাইলগুলো ফিল্টার করা
+                const videoFiles = files.filter(file => {
+                    if (file.type !== 'file') return false;
+                    const lowerName = file.name.toLowerCase();
+                    return videoExtensions.some(ext => lowerName.endsWith(ext));
+                });
+
+                if (videoFiles.length === 0) {
+                    statusMsg.textContent = "এই রিপোজিটরির রুট ফোল্ডারে কোনো ভিডিও পাওয়া যায়নি।";
+                    return;
+                }
+
+                statusMsg.style.display = 'none';
+
+                // প্রতিটি ভিডিওর জন্য কার্ড তৈরি
+                videoFiles.forEach(video => {
+                    // GitHub Pages-এ থাকলে রিলেটিভ পাথ দ্রুত লোড হয়, নাহলে download_url
+                    const videoUrl = window.location.hostname.endsWith('.github.io') 
+                                     ? encodeURIComponent(video.name) 
+                                     : video.download_url;
+
+                    const card = document.createElement('div');
+                    card.className = 'video-card';
+                    card.innerHTML = `
+                        <div class="thumb-box">
+                            <video src="${videoUrl}#t=1.5" preload="metadata" muted></video>
+                            <div class="play-badge">▶</div>
+                        </div>
+                        <div class="video-info">
+                            <div class="video-title">${video.name}</div>
+                            <div class="video-size">${formatBytes(video.size)}</div>
+                        </div>
+                    `;
+
+                    card.onclick = () => playVideo(video.name, videoUrl, video.download_url);
+                    videoGrid.appendChild(card);
+                });
+
+            } catch (error) {
+                statusMsg.innerHTML = `❌ ভিডিও লোড করতে সমস্যা হয়েছে:<br><small>${error.message}</small>`;
+            }
+        }
+
+        function playVideo(name, url, downloadUrl) {
+            const playerBox = document.getElementById('playerBox');
+            const mainPlayer = document.getElementById('mainPlayer');
+            const titleBox = document.getElementById('current-title');
+            const downloadLink = document.getElementById('downloadLink');
+
+            playerBox.style.display = 'block';
+            mainPlayer.src = url;
+            titleBox.textContent = name;
+            downloadLink.href = downloadUrl;
+            
+            mainPlayer.play();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // পেজ লোড হলেই ভিডিও খোঁজা শুরু করবে
+        fetchVideosFromGitHub();
     </script>
 
 </body>
-</html>
+    </html>
